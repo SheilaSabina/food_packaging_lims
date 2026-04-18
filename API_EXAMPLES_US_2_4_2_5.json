@@ -1,0 +1,413 @@
+{
+  "API_EXAMPLES": {
+    "1_INPUT_NUMERIC_SUCCESS": {
+      "description": "Input data numerik - Hasil PASS (memenuhi semua standar)",
+      "method": "POST",
+      "endpoint": "/test-sessions/1/input-numeric",
+      "request_body": {
+        "test_parameter_id": 1,
+        "measured_value": 25.5,
+        "notes": "Pengukuran dilakukan pada suhu ruangan 25°C"
+      },
+      "expected_response": {
+        "success": true,
+        "data": {
+          "id": 123,
+          "test_session_id": 1,
+          "test_parameter_id": 1,
+          "measured_value": "25.5000",
+          "unit": "mg/dm2",
+          "applied_standard_id": 1,
+          "standard_min_value": null,
+          "standard_max_value": "60.00000000",
+          "result_status": "PASS",
+          "deviation_percentage": "-57.5000",
+          "data_status": "Draft",
+          "notes": "Pengukuran dilakukan pada suhu ruangan 25°C",
+          "calculation_details": {
+            "measured_value": 25.5,
+            "parameter_id": 1,
+            "standards_checked": 4,
+            "comparison_results": [
+              {
+                "standard": "SNI 16371:2019",
+                "is_pass": true,
+                "reason": "Nilai 25.5 memenuhi standar SNI"
+              },
+              {
+                "standard": "FDA CFR Part 165",
+                "is_pass": true,
+                "reason": "Nilai 25.5 memenuhi standar FDA"
+              },
+              {
+                "standard": "EU Regulation 10/2011",
+                "is_pass": true,
+                "reason": "Nilai 25.5 memenuhi standar EU"
+              },
+              {
+                "standard": "Peraturan BPOM No. 13/2019",
+                "is_pass": true,
+                "reason": "Nilai 25.5 memenuhi standar BPOM"
+              }
+            ],
+            "timestamp": "2026-04-16T10:30:45.000000Z"
+          }
+        },
+        "messages": [
+          "✓ Nilai numerik valid: 25.5000 mg/dm2",
+          "✓ Standar yang digunakan: Standar Nasional Indonesia (SNI 16371:2019)",
+          "✓ Nilai 25.5 memenuhi standar SNI",
+          "✓ Nilai 25.5 memenuhi standar FDA",
+          "✓ Nilai 25.5 memenuhi standar EU",
+          "✓ Nilai 25.5 memenuhi standar BPOM",
+          "✓ Data hasil uji tersimpan"
+        ],
+        "status_summary": {
+          "total_parameters": 1,
+          "passed": 1,
+          "failed": 0,
+          "inconclusive": 0,
+          "overall_status": "PASS"
+        }
+      }
+    },
+    
+    "2_INPUT_NUMERIC_FAIL": {
+      "description": "Input data numerik - Hasil FAIL (melebihi threshold FDA)",
+      "method": "POST",
+      "endpoint": "/test-sessions/1/input-numeric",
+      "request_body": {
+        "test_parameter_id": 1,
+        "measured_value": 45.5,
+        "notes": "Sampel dengan migrasi tinggi di simulan asam"
+      },
+      "expected_response": {
+        "success": true,
+        "data": {
+          "id": 124,
+          "test_session_id": 1,
+          "test_parameter_id": 1,
+          "measured_value": "45.5000",
+          "unit": "mg/dm2",
+          "applied_standard_id": 2,
+          "standard_min_value": null,
+          "standard_max_value": "10.00000000",
+          "result_status": "FAIL",
+          "deviation_percentage": "355.0000",
+          "data_status": "Draft",
+          "calculation_details": {
+            "comparison_results": [
+              {
+                "standard": "FDA CFR Part 165",
+                "is_pass": false,
+                "reason": "Nilai 45.5 melebihi maksimum yang diizinkan (10)"
+              }
+            ]
+          }
+        },
+        "messages": [
+          "✓ Nilai numerik valid: 45.5000 mg/dm2",
+          "✓ Standar yang digunakan: Food and Drug Administration (FDA CFR Part 165)",
+          "✗ Nilai 45.5 melebihi maksimum yang diizinkan (10)",
+          "✓ Data hasil uji tersimpan"
+        ],
+        "status_summary": {
+          "total_parameters": 1,
+          "passed": 0,
+          "failed": 1,
+          "inconclusive": 0,
+          "overall_status": "FAIL"
+        }
+      }
+    },
+
+    "3_INPUT_NUMERIC_INCONCLUSIVE": {
+      "description": "Input data numerik - Hasil INCONCLUSIVE (tidak ada standar untuk perbandingan)",
+      "method": "POST",
+      "endpoint": "/test-sessions/1/input-numeric",
+      "request_body": {
+        "test_parameter_id": 5,
+        "measured_value": 7.2,
+        "notes": "pH pengujian dalam simulan netral"
+      },
+      "expected_response": {
+        "success": true,
+        "data": {
+          "measured_value": "7.2000",
+          "result_status": "INCONCLUSIVE",
+          "data_status": "Draft",
+          "calculation_details": {
+            "warning": "Tidak ada standar aktif untuk perbandingan otomatis"
+          }
+        },
+        "messages": [
+          "✓ Nilai numerik valid: 7.2000",
+          "⚠️ Tidak ada standar aktif untuk perbandingan otomatis",
+          "✓ Data hasil uji tersimpan"
+        ]
+      }
+    },
+
+    "4_INPUT_NUMERIC_VALIDATION_ERROR": {
+      "description": "Input data numerik - ERROR (nilai tidak valid)",
+      "method": "POST",
+      "endpoint": "/test-sessions/1/input-numeric",
+      "request_body": {
+        "test_parameter_id": 1,
+        "measured_value": "abc123",
+        "notes": ""
+      },
+      "expected_response": {
+        "success": false,
+        "data": null,
+        "messages": [
+          "Nilai numerik tidak valid. Presisi maksimal 4 desimal."
+        ]
+      }
+    },
+
+    "5_UPLOAD_EVIDENCE": {
+      "description": "Upload bukti foto untuk hasil uji",
+      "method": "POST",
+      "endpoint": "/test-results/123/upload-evidence",
+      "request_body_formdata": {
+        "file": "(binary JPG/PNG/PDF file, max 10MB)",
+        "evidence_type": "Test Photo",
+        "description": "Foto hasil pengujian migrasi di spektrofotometer"
+      },
+      "expected_response": {
+        "success": true,
+        "data": {
+          "id": 999,
+          "test_result_id": 123,
+          "test_session_id": 1,
+          "file_name": "1713245680_abc123def456.jpg",
+          "file_path": "test-evidences/1/1713245680_abc123def456.jpg",
+          "file_type": "image/jpeg",
+          "file_size": 524288,
+          "evidence_type": "Test Photo",
+          "description": "Foto hasil pengujian migrasi di spektrofotometer",
+          "uploaded_by": "Budi Santoso",
+          "uploaded_at": "2026-04-16T10:45:30.000000Z",
+          "is_verified": false
+        },
+        "message": "Bukti pengujian berhasil diunggah"
+      }
+    },
+
+    "6_GET_STATUS_SUMMARY": {
+      "description": "Dapatkan ringkasan status pengujian",
+      "method": "GET",
+      "endpoint": "/test-sessions/1/status-summary",
+      "expected_response": {
+        "success": true,
+        "session_id": 1,
+        "session_status": "In-Progress",
+        "summary": {
+          "total_parameters": 3,
+          "passed": 2,
+          "failed": 1,
+          "inconclusive": 0,
+          "overall_status": "FAIL"
+        },
+        "results": [
+          {
+            "parameter_name": "Migrasi Total",
+            "measured_value": "25.5000",
+            "unit": "mg/dm2",
+            "status": "PASS",
+            "status_badge": "✅ LULUS",
+            "description": "Migrasi Total: 25.5000 mg/dm2 ✅ Memenuhi standar",
+            "evidence_count": 2
+          },
+          {
+            "parameter_name": "Kadar BPA (Bisphenol A)",
+            "measured_value": "0.1500",
+            "unit": "µg/L",
+            "status": "PASS",
+            "status_badge": "✅ LULUS",
+            "description": "Kadar BPA (Bisphenol A): 0.1500 µg/L ✅ Memenuhi standar",
+            "evidence_count": 1
+          },
+          {
+            "parameter_name": "Konsentrasi Radon",
+            "measured_value": "150.0000",
+            "unit": "Bq/L",
+            "status": "FAIL",
+            "status_badge": "❌ GAGAL",
+            "description": "Konsentrasi Radon: 150.0000 Bq/L ❌ Melebihi standar (Max: 50)",
+            "evidence_count": 1
+          }
+        ]
+      }
+    },
+
+    "7_VERIFY_APPROVE": {
+      "description": "Supervisor approve semua hasil uji (Verifikasi)",
+      "method": "POST",
+      "endpoint": "/test-sessions/1/verify",
+      "request_body": {
+        "action": "approve"
+      },
+      "expected_response": {
+        "success": true,
+        "message": "Semua hasil uji diverifikasi",
+        "summary": {
+          "total_results": 3,
+          "passed_results": 2,
+          "failed_results": 1,
+          "overall_status": "FAIL"
+        }
+      }
+    },
+
+    "8_VERIFY_REJECT": {
+      "description": "Supervisor reject hasil uji dengan alasan",
+      "method": "POST",
+      "endpoint": "/test-sessions/1/verify",
+      "request_body": {
+        "action": "reject",
+        "rejection_reason": "Foto bukti untuk parameter BPA tidak jelas, perlu diulang pengujian dan dokumentasi"
+      },
+      "expected_response": {
+        "success": true,
+        "message": "Hasil uji ditolak. Teknisi dapat memperbaiki data.",
+        "rejection_reason": "Foto bukti untuk parameter BPA tidak jelas, perlu diulang pengujian dan dokumentasi"
+      }
+    },
+
+    "9_GET_RESULT_DETAIL": {
+      "description": "Dapatkan detail hasil uji lengkap dengan evidences",
+      "method": "GET",
+      "endpoint": "/test-results/123",
+      "expected_response": {
+        "success": true,
+        "data": {
+          "id": 123,
+          "test_session_id": 1,
+          "test_parameter_id": 1,
+          "measured_value": "25.5000",
+          "unit": "mg/dm2",
+          "result_status": "PASS",
+          "data_status": "Draft",
+          "applied_standard_id": 1,
+          "standard_min_value": null,
+          "standard_max_value": "60.00000000",
+          "deviation_percentage": "-57.5000",
+          "notes": "Pengukuran dilakukan pada suhu ruangan 25°C",
+          "parameter": {
+            "id": 1,
+            "name": "Migrasi Total",
+            "unit": "mg/dm2",
+            "decimal_places": 4
+          },
+          "session": {
+            "id": 1,
+            "status": "In-Progress",
+            "technician": "Budi Santoso",
+            "test_started_at": "2026-04-16T09:00:00"
+          },
+          "applied_standard": {
+            "id": 1,
+            "standard_type": "SNI",
+            "reference_document": "SNI 16371:2019",
+            "max_value": "60.00000000"
+          },
+          "evidences": [
+            {
+              "id": 999,
+              "file_name": "1713245680_abc123.jpg",
+              "file_type": "image/jpeg",
+              "file_size": 524288,
+              "evidence_type": "Test Photo",
+              "is_verified": false
+            }
+          ]
+        }
+      }
+    },
+
+    "10_EXPORT_RESULTS": {
+      "description": "Export hasil pengujian untuk laporan",
+      "method": "GET",
+      "endpoint": "/test-sessions/1/export",
+      "expected_response": {
+        "success": true,
+        "export_data": {
+          "session_id": 1,
+          "technician": "Budi Santoso",
+          "supervisor": "Dr. Siti Nurhaliza",
+          "test_started_at": "2026-04-16T09:00:00",
+          "test_ended_at": "2026-04-16T12:30:00",
+          "summary": {
+            "total_parameters": 3,
+            "passed": 2,
+            "failed": 1,
+            "inconclusive": 0,
+            "overall_status": "FAIL"
+          },
+          "results": [
+            {
+              "parameter": "Migrasi Total",
+              "measured_value": "25.5000",
+              "unit": "mg/dm2",
+              "status": "PASS",
+              "description": "Migrasi Total: 25.5000 mg/dm2 ✅ Memenuhi standar",
+              "applied_standard": "SNI 16371:2019",
+              "evidences": [
+                "1713245680_abc123.jpg",
+                "1713245681_def456.jpg"
+              ]
+            },
+            {
+              "parameter": "Kadar BPA (Bisphenol A)",
+              "measured_value": "0.1500",
+              "unit": "µg/L",
+              "status": "PASS",
+              "description": "Kadar BPA (Bisphenol A): 0.1500 µg/L ✅ Memenuhi standar",
+              "applied_standard": "EFSA Safety Assessment BPA",
+              "evidences": [
+                "1713245682_ghi789.jpg"
+              ]
+            },
+            {
+              "parameter": "Konsentrasi Radon",
+              "measured_value": "150.0000",
+              "unit": "Bq/L",
+              "status": "FAIL",
+              "description": "Konsentrasi Radon: 150.0000 Bq/L ❌ Melebihi standar (Max: 50)",
+              "applied_standard": "EU Directive 2013/51/EURATOM",
+              "evidences": [
+                "1713245683_jkl012.jpg"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+
+  "NOTES": {
+    "precision": "Semua nilai decimal disimpan dengan presisi 8 desimal (decimal:8)",
+    "status_values": [
+      "PASS - Nilai memenuhi semua standar aktif",
+      "FAIL - Ada minimal 1 standar yang tidak terpenuhi",
+      "INCONCLUSIVE - Tidak ada standar aktif untuk perbandingan"
+    ],
+    "data_status_values": [
+      "Alat Siap - Equipment siap pakai (terkalibrasi)",
+      "In-Progress - Pengujian sedang berlangsung",
+      "Draft - Data tersimpan, menunggu verifikasi",
+      "Verified - Supervisor approve, data terkunci"
+    ],
+    "file_upload_limits": {
+      "max_size_mb": 10,
+      "allowed_types": [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "application/pdf"
+      ]
+    }
+  }
+}
