@@ -1,17 +1,34 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TestResultController;
 
-// Rute Default
-Route::get('/', [TestResultController::class, 'dashboard'])->name('technician.dashboard');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+});
 
-// Supervisor Dashboard
-Route::get('/supervisor/dashboard', [TestResultController::class, 'supervisorDashboard'])->name('supervisor.dashboard');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// User Journey 2: Pelaksanaan Pengujian Laboratorium
-// Halaman terpisah untuk dashboard, input numerik, dan review mandiri
-Route::prefix('test-sessions/{session}')->group(function () {
+Route::middleware('auth')->group(function () {
+    Route::get('/', function () {
+        $user = auth()->user();
+
+        return $user && $user->role === 'supervisor'
+            ? redirect()->route('supervisor.dashboard')
+            : redirect()->route('technician.dashboard');
+    })->name('home');
+
+    // Rute Default untuk teknisi
+    Route::get('/technician/dashboard', [TestResultController::class, 'dashboard'])->name('technician.dashboard');
+
+    // Supervisor Dashboard & Verification
+    Route::get('/supervisor/dashboard', [TestResultController::class, 'supervisorDashboard'])->name('supervisor.dashboard');
+    
+    // User Journey 2: Pelaksanaan Pengujian Laboratorium
+    // Halaman terpisah untuk dashboard, input numerik, dan review mandiri
+    Route::prefix('test-sessions/{session}')->group(function () {
     
     // --- AKTOR: TEKNISI ---
     // Halaman Form Input (US-2.4)
@@ -40,5 +57,6 @@ Route::prefix('test-sessions/{session}')->group(function () {
 
 });
 
-// Rute untuk Upload Bukti (Global Result ID)
-Route::post('/test-results/{result}/upload-evidence', [TestResultController::class, 'uploadEvidence'])->name('test.evidence.upload');
+    // Rute untuk Upload Bukti (Global Result ID)
+    Route::post('/test-results/{result}/upload-evidence', [TestResultController::class, 'uploadEvidence'])->name('test.evidence.upload');
+});

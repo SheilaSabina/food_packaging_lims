@@ -36,7 +36,7 @@ class TestResultController extends Controller
         // 1. Cek status alat
         if (!$session->isEquipmentReady()) {
             // Jika diakses via browser, kita bisa redirect ke dashboard dengan pesan error
-            return redirect()->back()->with('error', 'Alat tidak siap untuk pengujian.');
+            return redirect()->back()->with('error', 'Alat tidak bisa digunakan karena masa kalibrasi sudah lewat.');
         }
 
         // 2. Ambil parameter yang belum diinput
@@ -67,8 +67,20 @@ class TestResultController extends Controller
      */
     public function dashboard()
     {
+        $user = auth()->user();
+
+        if ($user->role !== 'technician') {
+            return redirect()->route('supervisor.dashboard');
+        }
+
         $sessions = TestSession::with(['order', 'technician'])
-            ->whereIn('status', ['Draft', 'In-Progress'])
+            ->whereIn('status', ['Draft', 'In-Progress', 'Ready for Verification'])
+            ->orderByRaw("CASE
+                WHEN status = 'Draft' THEN 1
+                WHEN status = 'In-Progress' THEN 2
+                WHEN status = 'Ready for Verification' THEN 3
+                ELSE 4
+            END")
             ->orderByDesc('updated_at')
             ->get();
 
@@ -98,14 +110,9 @@ class TestResultController extends Controller
      */
     public function supervisorDashboard()
     {
-        $sessions = TestSession::with(['order', 'technician', 'results'])
-            ->where('status', 'Ready for Verification')
-            ->orderByDesc('updated_at')
-            ->get();
-
-        return view('supervisor.dashboard', [
-            'sessions' => $sessions,
-        ]);
+        // Hanya ambil yang menunggu verifikasi sesuai US 2.6
+        $sessions = TestSession::where('status', 'Ready for Verification')->get();
+        return view('supervisor.dashboard', compact('sessions'));
     }
 
     /**
@@ -121,6 +128,12 @@ class TestResultController extends Controller
      */
     public function inputNumeric(Request $request, TestSession $session)
     {
+        if (in_array($session->status, ['Ready for Verification', 'Verified'])) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Integritas Data: Sesi sudah dikunci dan tidak dapat diubah lagi.'
+        ], 403);
+    }
         // Validasi input
         $validated = $request->validate([
             'test_parameter_id' => 'required|integer|exists:test_parameters,id',
@@ -236,56 +249,37 @@ class TestResultController extends Controller
             'rejection_reason' => 'required_if:action,reject|nullable|string|max:500',
         ]);
 
-        // Cek apakah semua hasil sudah input
+        // 1. Validasi Kesiapan (Cek apakah semua sudah diinput)
         if (!$session->areAllResultsInputted()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Belum semua parameter diinput',
-            ], 400);
+            return response()->json(['success' => false, 'message' => 'Belum semua parameter diinput'], 400);
         }
 
+        // 2. Logika Berdasarkan Aksi & Peran (US-2.6)
         if ($validated['action'] === 'submit') {
-            if ($session->status !== 'In-Progress') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Sesi hanya dapat dikirim untuk verifikasi apabila sedang In-Progress.',
-                ], 400);
+            // HANYA TEKNISI yang boleh submit
+            if (auth()->user()->role !== 'technician') {
+                return response()->json(['message' => 'Hanya teknisi yang bisa mengirim verifikasi.'], 403);
             }
 
             $session->update(['status' => 'Ready for Verification']);
+            return response()->json(['success' => true, 'message' => 'Sesi berhasil dikirim ke Supervisor.']);
+        }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Sesi berhasil dikirim untuk verifikasi. Data sekarang dikunci untuk pengeditan.',
-                'status' => $session->status,
-            ]);
+        // HANYA SUPERVISOR yang boleh Approve atau Reject
+        if (auth()->user()->role !== 'supervisor') {
+            return response()->json(['message' => 'Anda tidak memiliki otoritas untuk verifikasi ini.'], 403);
         }
 
         if ($validated['action'] === 'approve') {
-            // Approve dan lock data
             $verifyResult = $this->comparisonService->verifySessionResults($session);
-
             if ($verifyResult['success']) {
                 $this->comparisonService->lockResults($session);
             }
-
-            return response()->json([
-                'success' => $verifyResult['success'],
-                'message' => $verifyResult['message'],
-                'summary' => $verifyResult['summary'] ?? null,
-            ]);
+            return redirect()->route('supervisor.dashboard')->with('success', 'Sesi berhasil di-Approve dan data telah dikunci.');
         } else {
-            // Reject dengan alasan
-            $session->reject(
-            $validated['rejection_reason'],
-            $request->user() // Menggunakan $request daripada auth()
-        );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Hasil uji ditolak. Teknisi dapat memperbaiki data.',
-                'rejection_reason' => $validated['rejection_reason'],
-            ]);
+            // Logic Reject
+            $session->reject($validated['rejection_reason'], auth()->user());
+            return redirect()->route('supervisor.dashboard')->with('success', 'Sesi telah ditolak dan dikembalikan ke teknisi.');
         }
     }
 

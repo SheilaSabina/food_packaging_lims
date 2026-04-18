@@ -124,7 +124,7 @@
 
                         <button type="submit" id="submitBtn"
                             class="flex w-full items-center justify-center gap-3 rounded-xl bg-accent-600 px-6 py-3.5 font-semibold text-white hover:bg-accent-700 focus:ring-4 focus:ring-accent-500/50 transition duration-150 disabled:opacity-60 disabled:cursor-not-allowed">
-                            <span id="btnText">Simpan & Bandingkan Otomatis (US-2.5)</span>
+                            <span id="btnText">Simpan & Bandingkan Otomatis</span>
                             <svg id="loadingSpinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         </button>
                     </form>
@@ -279,10 +279,10 @@
             disableForm();
         }
 
-        // CEK STATUS SESSION
-        if (data.status === 'Verified') {
-            disableForm("Sesi sudah diverifikasi");
-        }
+    // CEK STATUS SESSION (Gembok form jika sudah dikirim atau selesai)
+    if (data.status === 'Verified' || data.status === 'Ready for Verification') {
+        disableForm("Sesi sedang dalam verifikasi atau sudah selesai");
+    }
     }
 
     fetch(`/test-sessions/${sessionId}/data`)
@@ -472,10 +472,10 @@
 
             if (data.success) {
                 formMessages.className = "rounded-xl p-4 text-sm bg-green-950 border border-green-800 text-green-200";
-                formMessages.innerHTML = `Bukti berhasil diunggah.`;
-                if (data.message) {
-                    formMessages.innerHTML += `<br>${data.message}`;
-                }
+                
+                // Gunakan pesan dari server jika ada, jika tidak pakai pesan default (pilih salah satu)
+                formMessages.innerHTML = `<strong>Berhasil!</strong> ${data.message || 'Bukti pengujian berhasil diunggah.'}`;
+                
                 this.reset();
                 resultSelect.selectedIndex = 0;
             } else {

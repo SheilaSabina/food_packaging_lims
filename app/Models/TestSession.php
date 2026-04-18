@@ -11,7 +11,7 @@ use App\Models\Order;
 
 class TestSession extends Model
 {
-    protected $guarded = [
+    protected $fillable = [
         'order_id',
         'technician_id',
         'supervisor_id',
@@ -82,11 +82,32 @@ class TestSession extends Model
      */
     public function isEquipmentReady(): bool
     {
-        return $this->equipment_is_calibrated &&
-            (
-                $this->equipment_calibration_expires_at === null ||
-                $this->equipment_calibration_expires_at > now()
-            );
+        // Jika belum dikalibrasi, langsung false
+        if (!$this->equipment_is_calibrated) {
+            return false;
+        }
+
+        // Jika tidak ada tanggal expire, anggap siap
+        if ($this->equipment_calibration_expires_at === null) {
+            return true;
+        }
+
+        // Jika sudah expired, update status dan return false
+        if ($this->equipment_calibration_expires_at <= now()) {
+            if ($this->equipment_status !== 'Kalibrasi Kedaluwarsa') {
+                $this->equipment_status = 'Kalibrasi Kedaluwarsa';
+                $this->save();
+            }
+            return false;
+        }
+
+        // Pastikan status adalah 'Siap Pakai' jika masih valid
+        if ($this->equipment_status !== 'Alat Siap') {
+            $this->equipment_status = 'Alat Siap';
+            $this->save();
+        }
+
+        return true;
     }
 
     /**

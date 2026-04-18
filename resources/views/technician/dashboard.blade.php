@@ -43,7 +43,7 @@
             <div>
                 <p class="text-sm text-slate-500">Dashboard > Teknisi > <span class="text-accent-500">Daftar Penugasan</span></p>
                 <h1 class="mt-2 text-3xl font-bold text-white">Dashboard Teknisi</h1>
-                <p class="mt-1 text-slate-400">Lihat sesi pengujian yang masih berstatus <strong>Draft</strong> atau <strong>In-Progress</strong>.</p>
+                <p class="mt-1 text-slate-400">Lihat semua sesi pengujian yang masih dalam proses pengerjaan.</p>
             </div>
             <div class="flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900 px-4 py-2">
                 <div class="h-2 w-2 rounded-full bg-accent-500 animate-pulse"></div>
@@ -54,12 +54,12 @@
         <section class="grid gap-8">
             <div class="rounded-3xl border border-slate-800 bg-slate-900 p-7 shadow-xl overflow-x-auto">
                 <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
-                    <h2 class="text-xl font-semibold text-white">Tabel Sesi Aktif</h2>
+                    <h2 class="text-xl font-semibold text-white">Tabel Sesi Pengujian</h2>
                     <span class="rounded-full bg-accent-600 px-3 py-1 text-xs text-white">{{ $sessions->count() }} aktif</span>
                 </div>
                 @if($sessions->isEmpty())
                     <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-800/50 p-8 text-center text-slate-400">
-                        Belum ada sesi pengujian dalam status Draft atau In-Progress.
+                        Belum ada sesi pengujian yang aktif.
                     </div>
                 @else
                     <table class="min-w-full text-left text-sm text-slate-300">
@@ -81,12 +81,21 @@
                                     <td class="px-4 py-4">{{ $session->order?->client_name ?? 'Tidak tersedia' }}</td>
                                     <td class="px-4 py-4">{{ $session->technician?->name ?? 'Tidak tersedia' }}</td>
                                     <td class="px-4 py-4">
-                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $session->status === 'Draft' ? 'bg-slate-800 text-slate-200 border border-slate-700' : 'bg-blue-950 text-blue-300 border border-blue-800' }}">
+                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{
+                                            $session->status === 'Draft' ? 'bg-yellow-950 text-yellow-300 border border-yellow-800' :
+                                            ($session->status === 'In-Progress' ? 'bg-blue-950 text-blue-300 border border-blue-800' :
+                                            ($session->status === 'Ready for Verification' ? 'bg-purple-950 text-purple-300 border border-purple-800' :
+                                            'bg-slate-800 text-slate-200 border border-slate-700'))
+                                        }}">
                                             {{ $session->status }}
                                         </span>
                                     </td>
                                     <td class="px-4 py-4 space-x-2">
-                                        <a href="{{ route('test.input', ['session' => $session->id]) }}" class="rounded-xl bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-500 transition">Input</a>
+                                        @if($session->status === 'Ready for Verification')
+                                            <button disabled class="rounded-xl bg-slate-700 px-3 py-2 text-xs font-semibold text-slate-400 cursor-not-allowed">Locked</button>
+                                        @else
+                                            <a href="{{ route('test.input', ['session' => $session->id]) }}" class="rounded-xl bg-accent-600 px-3 py-2 text-xs font-semibold text-white hover:bg-accent-500 transition">Input</a>
+                                        @endif
                                         <a href="{{ route('test.review', ['session' => $session->id]) }}" class="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-slate-200 hover:border-accent-500 hover:text-white transition">Review</a>
                                     </td>
                                 </tr>

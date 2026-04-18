@@ -21,9 +21,16 @@ class DatabaseSeeder extends Seeder
 
         $technician = User::factory()->create([
             'name' => 'Technician Tester',
-            'email' => 'technician@example.com',
+            'email' => 'teknisi@gmail.com',
             'role' => 'technician',
-            'password' => bcrypt('password'),
+            'password' => bcrypt('teknisi1234'),
+        ]);
+
+        $supervisor = User::factory()->create([
+            'name' => 'Supervisor Quality',
+            'email' => 'supervisor@gmail.com',
+            'role' => 'supervisor',
+            'password' => bcrypt('supervisor1234'),
         ]);
 
         $order = Order::create([
@@ -49,8 +56,8 @@ class DatabaseSeeder extends Seeder
             ['client_name' => 'PT Unilever Indonesia Tbk', 'product_type' => 'cair', 'equipment_id' => 'EQ-002', 'status' => 'Draft'],
             ['client_name' => 'PT Nestle Indonesia', 'product_type' => 'padat', 'equipment_id' => 'EQ-003', 'status' => 'Draft'],
             ['client_name' => 'PT Mayora Indah Tbk', 'product_type' => 'kemasan', 'equipment_id' => 'EQ-004', 'status' => 'Draft'],
-            ['client_name' => 'PT Wings Surya', 'product_type' => 'padat', 'equipment_id' => 'EQ-005', 'status' => 'In-Progress'],
-            ['client_name' => 'PT ABC Food', 'product_type' => 'kemasan', 'equipment_id' => 'EQ-006', 'status' => 'In-Progress'],
+            ['client_name' => 'PT Wings Surya', 'product_type' => 'padat', 'equipment_id' => 'EQ-005', 'status' => 'Draft'],
+            ['client_name' => 'PT ABC Food', 'product_type' => 'kemasan', 'equipment_id' => 'EQ-006', 'status' => 'Draft'],
         ];
 
         foreach ($dummyOrders as $index => $dummy) {

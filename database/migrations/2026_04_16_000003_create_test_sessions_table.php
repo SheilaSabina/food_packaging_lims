@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('technician_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('supervisor_id')->nullable()->constrained('users')->onDelete('set null');
             $table->string('equipment_id')->nullable(); // ID Alat yang digunakan
-            $table->enum('equipment_status', ['Alat Siap', 'In-Progress', 'Draft', 'Verified'])->default('Alat Siap');
+            $table->enum('equipment_status', ['Alat Siap', 'Kalibrasi Kedaluwarsa', 'In-Progress', 'Draft', 'Verified'])->default('Alat Siap');
             
             // Calibration tracking
             $table->dateTime('equipment_calibrated_at')->nullable();
