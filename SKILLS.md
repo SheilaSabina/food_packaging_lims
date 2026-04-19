@@ -8,9 +8,8 @@ This skill guides the AI to implement laboratory workflows for the food packagin
 |---|---|
 | Language | PHP 8.4.6 |
 | Framework | Laravel 13 |
-| Starter Kit | Laravel Livewire Starter Kit (Class API) |
 | UI Component | Tailwind CSS |
-| Reactivity | Blade Templating |
+| Reactivity | Server Side Rendering |
 | Styling | Tailwind CSS v4 |
 | Database | SQLite (file: database/database.sqlite) |
 | Auth | Built-in via Livewire Starter Kit |
