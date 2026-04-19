@@ -12,7 +12,7 @@ This skill guides the AI to implement laboratory workflows for the food packagin
 | Reactivity | Server Side Rendering |
 | Styling | Tailwind CSS v4 |
 | Database | SQLite (file: database/database.sqlite) |
-| Auth | Built-in via Livewire Starter Kit |
+| Auth | Built-in via Laravel Starter Kit (Breeze/Custom) |
 | Queue | Laravel Queue (database driver) |
 | Notification | Laravel Notifications (Mail) |
 | Storage | Laravel Storage (local) |
