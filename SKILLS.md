@@ -8,10 +8,16 @@ This skill guides the AI to implement laboratory workflows for the food packagin
 |---|---|
 | Language | PHP 8.4.6 |
 | Framework | Laravel 13 |
-| Reactivity | Livewire 4 (Class API) |
-| UI Component | Flux UI |
+| Starter Kit | Laravel Livewire Starter Kit (Class API) |
+| UI Component | Flux UI (Livewire component library) |
+| Reactivity | Livewire 4 |
 | Styling | Tailwind CSS v4 |
-| Database | SQLite |
+| Database | SQLite (file: database/database.sqlite) |
+| Auth | Built-in via Livewire Starter Kit |
+| Queue | Laravel Queue (database driver) |
+| Notification | Laravel Notifications (Mail) |
+| Storage | Laravel Storage (local) |
+| Testing | PHPUnit + Laravel Feature Tests |
 
 ## Project Structure
 ```
