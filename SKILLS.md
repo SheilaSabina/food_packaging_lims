@@ -1,184 +1,276 @@
-# Laboratory Execution & Verification Skill
+# User Journey 2: Laboratory Execution & Verification Skill
 
 ## Overview
-This skill guides the AI to implement laboratory workflows for the food packaging safety testing system, including automated threshold validation against food safety regulations and strict data integrity through supervisor verification. It focuses on User Journey 2: Laboratory Execution & Verification (US 2.1 - US 2.6), ensuring that measured values are evaluated consistently, status transitions are enforced, and verification is managed via Livewire 4 components.
+
+Skill ini memandu implementasi workflow laboratorium pada sistem pengujian keamanan kemasan pangan. Fokus pada User Journey 2 (US 2.1 - US 2.6), mencakup proses input hasil uji oleh teknisi, validasi otomatis terhadap ambang batas (threshold), serta verifikasi oleh supervisor untuk menjaga integritas dan auditabilitas data.
+
+Sistem dibangun menggunakan arsitektur MVC (Model-View-Controller) dengan tambahan Service Layer untuk mengisolasi logika bisnis, khususnya pada proses evaluasi PASS/FAIL.
+
+---
 
 ## Tech Stack
-| Layer | Technology |
-|---|---|
-| Language | PHP 8.4.6 |
-| Framework | Laravel 13 |
-| UI Component | Tailwind CSS |
-| Reactivity | Server Side Rendering |
-| Styling | Tailwind CSS v4 |
-| Database | SQLite (file: database/database.sqlite) |
-| Auth | Built-in via Laravel Starter Kit (Breeze/Custom) |
-| Queue | Laravel Queue (database driver) |
-| Notification | Laravel Notifications (Mail) |
-| Storage | Laravel Storage (local) |
-| Testing | PHPUnit + Laravel Feature Tests |
+
+| Layer     | Technology                    |
+| --------- | ----------------------------- |
+| Language  | PHP 8                         |
+| Framework | Laravel 13                    |
+| View      | Blade (Server Side Rendering) |
+| Styling   | Tailwind CSS                  |
+| Database  | SQLite                        |
+| Testing   | PHPUnit                       |
+
+---
+
+## Installation
+
+```bash
+# 1. Create Laravel Project
+composer create-project laravel/laravel sistem-pengujian-kemasan
+cd sistem-pengujian-kemasan
+
+# 2. Setup SQLite
+touch database/database.sqlite
+
+# 3. Migration & Seeder
+php artisan migrate --seed
+
+# 4. Run server
+php artisan serve
+```
+
+---
 
 ## Project Structure
+
 ```
 app/
-  Livewire/
-    Lab/
-      SampleScanner.php
-      TestExecution.php
-    Supervisor/
-      VerificationDashboard.php
-  Services/
-    TestResultComparisonService.php
-    CalibrationGuard.php
+├── Http/Controllers/
+│   └── TestResultController.php
+├── Models/
+│   ├── TestSession.php
+│   ├── TestResult.php
+│   ├── TestParameter.php
+│   └── User.php
+└── Services/
+    ├── TestResultComparisonService.php
+    └── TestEvidenceService.php
+
+resources/
+└── views/
+    ├── supervisor/
+    │   └── dashboard.blade.php
+    └── technician/
+        ├── input.blade.php
+        └── review.blade.php
 ```
 
-## Database Schema (SQLite-Specific)
-- Constraint: SQLite does not support ENUM types natively. Use string columns with application-level validation and explicit status guards.
-- `test_parameters`
-  - `id` (INTEGER, PK)
-  - `threshold_max` (REAL)
-  - `unit` (TEXT)
-  - additional regulatory metadata fields as needed
-- `test_order_parameters`
-  - `id` (INTEGER, PK)
-  - `test_order_id` (INTEGER, FK)
-  - `test_parameter_id` (INTEGER, FK)
-  - `measured_value` (REAL)
-  - `result_status` (TEXT: pending/passed/failed)
-  - `rejection_reason` (TEXT)
-  - `status` (TEXT: received/in_lab/ready_for_verification/completed/failed)
-  - audit fields for `verified_by`, `verified_at`, `updated_by`
+---
+
+## Database Schema (SQLite)
+
+### Tabel: users
+
+| Kolom | Tipe    | Keterangan              |
+| ----- | ------- | ----------------------- |
+| id    | INTEGER | Primary Key             |
+| name  | TEXT    | Nama user               |
+| role  | TEXT    | technician / supervisor |
+
+---
+
+### Tabel: test_sessions
+
+| Kolom            | Tipe      | Keterangan                                                         |
+| ---------------- | --------- | ------------------------------------------------------------------ |
+| id               | INTEGER   | Primary Key                                                        |
+| order_id         | INTEGER   | Relasi order                                                       |
+| technician_id    | INTEGER   | User teknisi                                                       |
+| equipment_status | TEXT      | Status alat                                                        |
+| status           | TEXT      | Draft / In-Progress / Ready for Verification / Verified / Rejected |
+| verified_at      | TIMESTAMP | Waktu verifikasi                                                   |
+| rejection_reason | TEXT      | Alasan penolakan                                                   |
+
+---
+
+### Tabel: test_parameters
+
+| Kolom         | Tipe    | Keterangan     |
+| ------------- | ------- | -------------- |
+| id            | INTEGER | Primary Key    |
+| name          | TEXT    | Nama parameter |
+| unit          | TEXT    | Satuan         |
+| threshold_max | REAL    | Ambang batas   |
+
+---
+
+### Tabel: test_results
+
+| Kolom             | Tipe    | Keterangan        |
+| ----------------- | ------- | ----------------- |
+| id                | INTEGER | Primary Key       |
+| test_session_id   | INTEGER | Relasi ke session |
+| test_parameter_id | INTEGER | Relasi parameter  |
+| measured_value    | REAL    | Nilai hasil ukur  |
+| result_status     | TEXT    | PASS / FAIL       |
+
+---
+
+### Tabel: test_evidences
+
+| Kolom         | Tipe    | Keterangan  |
+| ------------- | ------- | ----------- |
+| id            | INTEGER | Primary Key |
+| file_path     | TEXT    | Lokasi file |
+| evidence_type | TEXT    | Jenis bukti |
+
+---
 
 ## Status Flow
-The laboratory execution and verification lifecycle follows a controlled status flow:
-- `received` -> test sample is logged and awaiting processing
-- `in_lab` -> technician is executing the test and recording `measured_value`
-- `ready_for_verification` -> sample is complete and flagged for supervisor review
-- `completed` (Verified) -> supervisor confirms the result, final approval is granted
-- `failed` (Rejected for retesting) -> supervisor rejects the measurement and records `rejection_reason`
+
+| Status                 | Aktor      | Deskripsi            | Konsekuensi             |
+| ---------------------- | ---------- | -------------------- | ----------------------- |
+| Draft                  | Teknisi    | Sesi dibuat          | Data kosong disiapkan   |
+| In-Progress            | Teknisi    | Input hasil uji      | Validasi berjalan       |
+| Ready for Verification | Teknisi    | Submit ke supervisor | Data dikunci (readonly) |
+| Verified               | Supervisor | Disetujui            | Data terkunci permanen  |
+| Rejected               | Supervisor | Ditolak              | Form dibuka kembali     |
+
+---
 
 ## Coding Conventions
-- Service Layer: All business logic for `measured_value <= threshold_max` must be centralized in service classes such as `TestResultComparisonService` and `CalibrationGuard`.
-- Data Locking: Implement status-based locking. When a record has `status` equal to `ready_for_verification` or `completed`, the technician-facing form must be read-only and cannot be modified by the technician.
-- Transactions: Use `DB::transaction()` for all status transitions and updates that change verification state or test results.
-- Validation: Use Livewire 4 `#[Validate]` attributes for all input validation rules instead of legacy protected `$rules` arrays.
-- Architecture: Use MVC + Service Layer. Keep controllers and Livewire components thin, delegate validation and threshold comparison to services.
 
-### Livewire 4 Example: Supervisor Verification
+### 1. Service Layer First
+
+Semua logika perbandingan threshold HARUS berada di:
+`TestResultComparisonService`
+
+---
+
+### 2. Data Locking
+
+Jika status:
+
+* Ready for Verification
+* Verified
+
+Maka:
+
+* Form teknisi = READ ONLY
+* Tidak boleh update data
+
+---
+
+### 3. Atomic Transaction
+
+Gunakan:
+
 ```php
-<?php
+DB::transaction()
+```
 
-namespace App\Livewire\Supervisor;
+Untuk:
 
-use App\Models\TestOrderParameter;
-use App\Services\TestResultComparisonService;
-use Illuminate\Support\Facades\DB;
-use Livewire\Attributes\Validate;
-use Livewire\Component;
+* Verifikasi
+* Update status
 
-class VerificationDashboard extends Component
+---
+
+### 4. Validation Rules
+
+* measured_value → numeric
+* rejection_reason → wajib jika Rejected
+
+---
+
+### 5. Role-Based Access
+
+* technician → input data
+* supervisor → verifikasi
+
+---
+
+## Controller Example (Supervisor Verification)
+
+```php
+public function verifySession(Request $request, TestSession $session)
 {
-    public TestOrderParameter $parameter;
-    public $status;
-    #[Validate('required_if:status,failed')]
-    public $rejection_reason;
-
-    public function mount(TestOrderParameter $parameter)
-    {
-        $this->parameter = $parameter;
-        $this->status = $parameter->status;
+    if ($session->status !== 'Ready for Verification') {
+        return back()->with('error', 'Sesi belum siap diverifikasi');
     }
 
-    public function verify(TestResultComparisonService $comparisonService)
-    {
-        if ($this->parameter->status !== 'ready_for_verification') {
-            session()->flash('error', 'Record is not ready for verification');
-            return;
-        }
+    DB::transaction(function () use ($request, $session) {
 
-        DB::transaction(function () use ($comparisonService) {
-            $result = $comparisonService->compareMeasuredValue(
-                $this->parameter->measured_value,
-                $this->parameter->testParameter->threshold_max
-            );
-
-            $this->parameter->update([
-                'status' => 'completed',
-                'result_status' => $result['status'],
-                'rejection_reason' => null,
-                'verified_by' => auth()->id(),
+        if ($request->action === 'approve') {
+            $session->update([
+                'status' => 'Verified',
                 'verified_at' => now(),
+                'rejection_reason' => null
             ]);
-        });
+        } else {
+            $request->validate([
+                'rejection_reason' => 'required|string'
+            ]);
 
-        session()->flash('message', 'Verification completed');
-    }
-
-    public function reject()
-    {
-        $this->validate();
-
-        if ($this->parameter->status !== 'ready_for_verification') {
-            session()->flash('error', 'Record is not ready for verification');
-            return;
+            $session->update([
+                'status' => 'Rejected',
+                'rejection_reason' => $request->rejection_reason
+            ]);
         }
+    });
 
-        DB::transaction(function () {
-            $this->parameter->update([
-                'status' => 'failed',
-                'result_status' => 'failed',
-                'rejection_reason' => $this->rejection_reason,
-                'verified_by' => auth()->id(),
-                'verified_at' => now(),
-            ]);
-        });
-
-        session()->flash('message', 'Verification rejected');
-    }
-
-    public function render()
-    {
-        return view('livewire.supervisor.verification-dashboard');
-    }
+    return redirect()->back()->with('success', 'Verifikasi berhasil');
 }
 ```
 
-### Service Layer Example: Threshold Validation
+---
+
+## Service Layer Example
+
 ```php
-<?php
-
-namespace App\Services;
-
-use App\Models\TestOrderParameter;
-
-class TestResultComparisonService
+public function compareMeasuredValue(float $value, float $threshold): array
 {
-    public function compareMeasuredValue(float $measuredValue, float $thresholdMax): array
-    {
-        $valid = $measuredValue <= $thresholdMax;
+    $valid = $value <= $threshold;
 
-        return [
-            'is_valid' => $valid,
-            'status' => $valid ? 'passed' : 'failed',
-            'message' => $valid
-                ? 'Measured value is within allowed threshold.'
-                : 'Measured value exceeds threshold_max and requires rejection.',
-        ];
-    }
+    return [
+        'is_valid' => $valid,
+        'status' => $valid ? 'PASS' : 'FAIL',
+        'message' => $valid
+            ? 'Nilai memenuhi ambang batas'
+            : 'Nilai melebihi ambang batas'
+    ];
 }
 ```
+
+---
 
 ## Implementation Notes
-- Keep `TestExecution.php` and `SampleScanner.php` focused on test data capture and workflow state updates.
-- Keep `VerificationDashboard.php` focused on supervisor approval, rejection reasoning, and final status enforcement.
-- Use `CalibrationGuard.php` for any tolerance or calibration-related exception handling prior to final comparison.
-- Enforce SQLite compatibility with string-based status validation in the application layer.
-- Ensure the UI renders `Flux UI` components in a read-only state when `status` is `ready_for_verification` or later.
+
+* Controller hanya handle alur
+* Service handle logika bisnis
+* Gunakan TEXT untuk status (SQLite compatibility)
+* UI teknisi harus disable saat status locked
+* rejection_reason wajib untuk transparansi
+
+---
+
+## Acceptance Criteria (US 2.1 - US 2.6)
+
+| User Story | Implementasi                    |
+| ---------- | ------------------------------- |
+| US 2.1     | Create TestSession (Draft)      |
+| US 2.2     | Validasi alat                   |
+| US 2.3     | Status → Ready for Verification |
+| US 2.4     | Input measured_value            |
+| US 2.5     | Threshold validation (Service)  |
+| US 2.6     | Verifikasi supervisor           |
+
+---
 
 ## Related User Stories
-- US 2.1: Sample reception and lab execution entry
-- US 2.2: Measured value recording and unit compliance
-- US 2.3: Workflow handoff from technician to supervisor
-- US 2.4: Automated safety threshold validation
-- US 2.5: Service Layer threshold comparison using `threshold_max` and `measured_value`
-- US 2.6: Supervisor verification with status-based locking and rejection_reason handling
+
+* US 2.1: Sample reception
+* US 2.2: Measurement recording
+* US 2.3: Workflow handoff
+* US 2.4: Input hasil uji
+* US 2.5: Threshold comparison
+* US 2.6: Supervisor verification
