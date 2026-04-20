@@ -70,11 +70,15 @@ resources/
 
 ### Tabel: users
 
-| Kolom | Tipe    | Keterangan              |
-| ----- | ------- | ----------------------- |
-| id    | INTEGER | Primary Key             |
-| name  | TEXT    | Nama user               |
-| role  | TEXT    | technician / supervisor |
+### Tabel: users
+
+| Kolom        | Tipe Data | Keterangan                                                   |
+| ------------ | --------- | ------------------------------------------------------------ |
+| id [PK]      | INTEGER   | Auto Increment                                               |
+| name         | TEXT      | NOT NULL                                                     |
+| email [UQ]   | TEXT      | NOT NULL UNIQUE                                              |
+| password     | TEXT      | NOT NULL                                                     |
+| role         | TEXT      | Default: 'technician' (technician, supervisor, manager)      |
 
 ---
 
@@ -94,12 +98,14 @@ resources/
 
 ### Tabel: test_parameters
 
-| Kolom         | Tipe    | Keterangan     |
-| ------------- | ------- | -------------- |
-| id            | INTEGER | Primary Key    |
-| name          | TEXT    | Nama parameter |
-| unit          | TEXT    | Satuan         |
-| threshold_max | REAL    | Ambang batas   |
+| Kolom       | Tipe Data | Keterangan                                               |
+| ----------- | --------- | -------------------------------------------------------- |
+| id [PK]     | INTEGER   | Auto Increment                                           |
+| name        | TEXT      | Nama parameter (BPA, Radon, pH, dll)                     |
+| description | TEXT      | Penjelasan parameter uji                                 |
+| unit        | TEXT      | Satuan (mg/kg, µg/L, Bq/L, dll)                          |
+| data_type   | TEXT      | decimal, integer, float                                  |
+| category    | TEXT      | Contoh: Kontaminasi Kimia, Radiologi                     |
 
 ---
 
@@ -127,13 +133,15 @@ resources/
 
 ## Status Flow
 
-| Status                 | Aktor      | Deskripsi            | Konsekuensi             |
-| ---------------------- | ---------- | -------------------- | ----------------------- |
-| Draft                  | Teknisi    | Sesi dibuat          | Data kosong disiapkan   |
-| In-Progress            | Teknisi    | Input hasil uji      | Validasi berjalan       |
-| Ready for Verification | Teknisi    | Submit ke supervisor | Data dikunci (readonly) |
-| Verified               | Supervisor | Disetujui            | Data terkunci permanen  |
-| Rejected               | Supervisor | Ditolak              | Form dibuka kembali     |
+## Status Flow
+
+| Status                 | Aktor          | Deskripsi Aktivitas                                                                 | Konsekuensi & Logika Sistem                                                                                  |
+| ---------------------- | -------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Draft                  | Teknisi Lab    | Sesi pengujian baru dibuat berdasarkan antrian order.                              | Sistem menyiapkan baris kosong di tabel test_results.                                                        |
+| In-Progress            | Teknisi Lab    | Teknisi memasukkan nilai ukur (measured_value) dan mengunggah bukti foto.          | Sistem mencatat test_started_at dan melakukan validasi tipe data secara real-time.                          |
+| Ready for Verification | Teknisi Lab    | Teknisi menyelesaikan input dan mengirimkan hasil untuk ditinjau supervisor.       | Data Locking Aktif: Form input menjadi Read-only. Teknisi tidak bisa lagi mengubah data.                     |
+| Verified               | Supervisor QC  | Supervisor menyetujui hasil uji setelah memeriksa bukti dan kecocokan ambang batas.| Sistem mencatat verified_at dan mengunci data secara permanen. Status akhir menjadi PASS atau FAIL.         |
+| Rejected               | Supervisor QC  | Supervisor menolak hasil karena data tidak valid atau bukti kurang lengkap.        | Data Unlocked: Sistem membuka kembali form input dan mewajibkan pengisian rejection_reason.                 |
 
 ---
 
@@ -255,14 +263,14 @@ public function compareMeasuredValue(float $value, float $threshold): array
 
 ## Acceptance Criteria (US 2.1 - US 2.6)
 
-| User Story | Implementasi                    |
-| ---------- | ------------------------------- |
-| US 2.1     | Create TestSession (Draft)      |
-| US 2.2     | Validasi alat                   |
-| US 2.3     | Status → Ready for Verification |
-| US 2.4     | Input measured_value            |
-| US 2.5     | Threshold validation (Service)  |
-| US 2.6     | Verifikasi supervisor           |
+| User Story | Deskripsi Aktivitas   | Implementasi Teknis                                                     |
+| ---------- | -------------------- | ----------------------------------------------------------------------- |
+| US 2.1     | Sample reception     | Inisialisasi TestSession dengan status Draft.                          |
+| US 2.2     | Pengecekan Alat      | Validasi equipment_status sebelum input diizinkan.                     |
+| US 2.3     | Workflow handoff     | Perubahan status ke Ready for Verification untuk antrean Supervisor.   |
+| US 2.4     | Input Hasil Uji      | Penyimpanan measured_value ke tabel test_results.                      |
+| US 2.5     | Otomasi PASS/FAIL    | Logika perbandingan pada TestResultComparisonService.                  |
+| US 2.6     | Verifikasi QC        | Fungsi verifySession pada Controller dengan penguncian data.           |
 
 ---
 
