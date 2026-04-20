@@ -132,6 +132,16 @@ resources/
 | status                | TEXT      | Draft, In-Progress, Ready for Verification, Verified, Rejected             |
 | rejection_reason      | TEXT      | Alasan penolakan oleh Supervisor (diisi jika status = Rejected)            |
 
+### Tabel: test_thresholds
+
+| Kolom                  | Tipe Data | Keterangan                                                                 |
+| ---------------------- | --------- | -------------------------------------------------------------------------- |
+| id [PK]                | INTEGER   | Auto Increment                                                             |
+| test_parameter_id [FK] | INTEGER   | Relasi ke test_parameters.id                                               |
+| standard_type          | TEXT      | Standar acuan (SNI, BPOM, FDA, EFSA, EU, WHO)                              |
+| max_value              | NUMERIC   | Ambang batas maksimal (threshold_max)                                      |
+| product_type           | TEXT      | Jenis produk (cair, padat, kemasan, kering)                                |
+
 ### Tabel: test_evidences
 
 | Kolom         | Tipe    | Keterangan  |
