@@ -121,6 +121,17 @@ resources/
 
 ---
 
+### Tabel: test_sessions (Lab Workflow)
+
+| Kolom                 | Tipe Data | Keterangan                                                                 |
+| --------------------- | --------- | -------------------------------------------------------------------------- |
+| id [PK]               | INTEGER   | Auto Increment                                                             |
+| order_id [FK]         | INTEGER   | Relasi ke orders.id                                                        |
+| technician_id [FK]    | INTEGER   | User (teknisi) yang mengerjakan uji                                        |
+| equipment_status      | TEXT      | Status alat (Siap, Kalibrasi Kedaluwarsa, Tidak Tersedia)                  |
+| status                | TEXT      | Draft, In-Progress, Ready for Verification, Verified, Rejected             |
+| rejection_reason      | TEXT      | Alasan penolakan oleh Supervisor (diisi jika status = Rejected)            |
+
 ### Tabel: test_evidences
 
 | Kolom         | Tipe    | Keterangan  |
